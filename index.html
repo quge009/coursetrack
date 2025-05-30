@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Course Track Simulator</title>
+    <title>My Power Pages Simulator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -34,7 +34,7 @@
 </head>
 <body class="p-4 sm:p-6 md:p-8 lg:p-10">
     <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 sm:p-8">
-        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">Track</h1>
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">My Custom Webpage</h1>
 
         <button id="addSectionBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 mb-8">
             Add New Section
@@ -117,49 +117,10 @@
             deleteSectionBtn.classList.add('ml-4', 'p-2', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-500', 'focus:ring-opacity-75');
             deleteSectionBtn.title = 'Delete Section';
             deleteSectionBtn.addEventListener('click', () => {
-                // Create modal overlay
-                const modalOverlay = document.createElement('div');
-                modalOverlay.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
-
-                // Create modal box
-                const modalBox = document.createElement('div');
-                modalBox.className = 'bg-white rounded-lg shadow-lg p-6 max-w-sm w-full text-center';
-
-                // Modal message
-                const message = document.createElement('p');
-                message.className = 'mb-6 text-gray-800 text-lg';
-                message.textContent = 'Are you sure you want to delete this section? This action cannot be undone.';
-
-                // Buttons container
-                const btnContainer = document.createElement('div');
-                btnContainer.className = 'flex justify-center gap-4';
-
-                // Yes button
-                const yesBtn = document.createElement('button');
-                yesBtn.className = 'bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-6 rounded focus:outline-none focus:ring-2 focus:ring-red-400';
-                yesBtn.textContent = 'Yes';
-                yesBtn.addEventListener('click', () => {
+                if (window.confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
                     sectionDiv.remove();
-                    saveData();
-                    document.body.removeChild(modalOverlay);
-                });
-
-                // No button
-                const noBtn = document.createElement('button');
-                noBtn.className = 'bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-2 px-6 rounded focus:outline-none focus:ring-2 focus:ring-gray-400';
-                noBtn.textContent = 'No';
-                noBtn.addEventListener('click', () => {
-                    document.body.removeChild(modalOverlay);
-                });
-
-                btnContainer.appendChild(yesBtn);
-                btnContainer.appendChild(noBtn);
-
-                modalBox.appendChild(message);
-                modalBox.appendChild(btnContainer);
-                modalOverlay.appendChild(modalBox);
-
-                document.body.appendChild(modalOverlay);
+                    saveData(); // Save data after deleting section
+                }
             });
 
             sectionHeader.appendChild(titleInput);
