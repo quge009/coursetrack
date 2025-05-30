@@ -1,7 +1,243 @@
 <!DOCTYPE html>
-<html>
-<body>
-<h1>Hello World</h1>
-<p>I'm hosted with GitHub Pages.</p>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Power Pages Simulator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+        }
+        [contenteditable]:focus {
+            outline: 2px solid #3b82f6; /* Blue outline on focus */
+            border-radius: 0.375rem; /* Rounded corners */
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-6 md:p-8 lg:p-10">
+    <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 sm:p-8">
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">My Custom Webpage</h1>
+
+        <button id="addSectionBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 mb-8">
+            Add New Section
+        </button>
+
+        <div id="sectionsContainer" class="space-y-8">
+            </div>
+    </div>
+
+    <script type="module">
+        // Firebase imports (placeholder for future Firestore integration)
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase (provided by the Canvas environment)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app;
+        let db;
+        let auth;
+        let userId = 'anonymous'; // Default userId
+
+        // Initialize Firebase and authenticate
+        async function initializeFirebase() {
+            try {
+                if (Object.keys(firebaseConfig).length > 0) {
+                    app = initializeApp(firebaseConfig);
+                    db = getFirestore(app);
+                    auth = getAuth(app);
+
+                    if (initialAuthToken) {
+                        await signInWithCustomToken(auth, initialAuthToken);
+                        console.log("Signed in with custom token.");
+                    } else {
+                        await signInAnonymously(auth);
+                        console.log("Signed in anonymously.");
+                    }
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
+                    console.log("Firebase initialized. User ID:", userId);
+                } else {
+                    console.warn("Firebase config not found. Running without Firebase.");
+                }
+            } catch (error) {
+                console.error("Error initializing Firebase or signing in:", error);
+                console.warn("Running without Firebase persistence due to an error.");
+            }
+        }
+
+        // Call Firebase initialization
+        initializeFirebase();
+
+        const sectionsContainer = document.getElementById('sectionsContainer');
+        const addSectionBtn = document.getElementById('addSectionBtn');
+
+        // Function to create a new section
+        function createSection(sectionData = { title: 'New Section', tableRows: [] }) {
+            const sectionDiv = document.createElement('div');
+            sectionDiv.classList.add('section-item', 'bg-gray-50', 'p-6', 'rounded-lg', 'shadow-sm', 'border', 'border-gray-200', 'mb-6');
+
+            // Section Header (Title and Delete Button)
+            const sectionHeader = document.createElement('div');
+            sectionHeader.classList.add('flex', 'justify-between', 'items-center', 'mb-4');
+
+            const titleInput = document.createElement('input');
+            titleInput.type = 'text';
+            titleInput.value = sectionData.title;
+            titleInput.classList.add('section-title', 'text-2xl', 'font-semibold', 'text-gray-700', 'w-full', 'p-2', 'border', 'border-gray-300', 'rounded-md', 'focus:ring-2', 'focus:ring-blue-500', 'focus:border-transparent', 'transition', 'duration-150', 'ease-in-out');
+            titleInput.placeholder = 'Enter section title';
+            titleInput.addEventListener('input', saveData); // Save data on title change
+
+            const deleteSectionBtn = document.createElement('button');
+            deleteSectionBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-700 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            `;
+            deleteSectionBtn.classList.add('ml-4', 'p-2', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-500', 'focus:ring-opacity-75');
+            deleteSectionBtn.title = 'Delete Section';
+            deleteSectionBtn.addEventListener('click', () => {
+                sectionDiv.remove();
+                saveData(); // Save data after deleting section
+            });
+
+            sectionHeader.appendChild(titleInput);
+            sectionHeader.appendChild(deleteSectionBtn);
+            sectionDiv.appendChild(sectionHeader);
+
+            // Table structure
+            const tableWrapper = document.createElement('div');
+            tableWrapper.classList.add('overflow-x-auto', 'mb-4');
+
+            const table = document.createElement('table');
+            table.classList.add('w-full', 'min-w-max', 'bg-white', 'border', 'border-gray-300', 'rounded-lg', 'overflow-hidden');
+            table.innerHTML = `
+                <thead class="bg-gray-200 text-gray-700 uppercase text-sm leading-normal">
+                    <tr>
+                        <th class="py-3 px-6 text-left">Course Name</th>
+                        <th class="py-3 px-6 text-left">Link</th>
+                        <th class="py-3 px-6 text-left">Progress</th>
+                        <th class="py-3 px-6 text-left">Notes</th>
+                        <th class="py-3 px-6 text-center">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="text-gray-600 text-sm font-light">
+                </tbody>
+            `;
+            const tbody = table.querySelector('tbody');
+            tableWrapper.appendChild(table);
+            sectionDiv.appendChild(tableWrapper);
+
+            // Add existing rows if data is provided
+            sectionData.tableRows.forEach(rowData => addRow(tbody, rowData));
+
+            // Button to add new rows to this section's table
+            const addRowBtn = document.createElement('button');
+            addRowBtn.classList.add('add-row-btn', 'bg-green-500', 'hover:bg-green-600', 'text-white', 'font-semibold', 'py-2', 'px-4', 'rounded-md', 'shadow-sm', 'transition', 'duration-150', 'ease-in-out', 'focus:outline-none', 'focus:ring-2', 'focus:ring-green-400', 'focus:ring-opacity-75');
+            addRowBtn.textContent = 'Add New Row';
+            addRowBtn.addEventListener('click', () => addRow(tbody, { 'Course Name': '', 'Link': '', 'Progress': '', 'Notes': '' }));
+
+            sectionDiv.appendChild(addRowBtn);
+            sectionsContainer.appendChild(sectionDiv);
+
+            return sectionDiv;
+        }
+
+        // Function to add a new row to a table
+        function addRow(tbody, rowData) {
+            const row = document.createElement('tr');
+            row.classList.add('border-b', 'border-gray-200', 'hover:bg-gray-100');
+
+            const columns = ['Course Name', 'Link', 'Progress', 'Notes'];
+
+            columns.forEach(colName => {
+                const td = document.createElement('td');
+                td.classList.add('py-3', 'px-6', 'text-left');
+                td.contentEditable = true;
+                td.textContent = rowData[colName];
+                td.addEventListener('input', saveData); // Save data on cell content change
+                row.appendChild(td);
+            });
+
+            // Action column for delete row button
+            const actionTd = document.createElement('td');
+            actionTd.classList.add('py-3', 'px-6', 'text-center');
+            const deleteRowBtn = document.createElement('button');
+            deleteRowBtn.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400 hover:text-red-600 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+            `;
+            deleteRowBtn.classList.add('p-1', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-400', 'focus:ring-opacity-75');
+            deleteRowBtn.title = 'Delete Row';
+            deleteRowBtn.addEventListener('click', () => {
+                row.remove();
+                saveData(); // Save data after deleting row
+            });
+            actionTd.appendChild(deleteRowBtn);
+            row.appendChild(actionTd);
+
+            tbody.appendChild(row);
+            saveData(); // Save data after adding row
+        }
+
+        // Function to save all data to local storage
+        function saveData() {
+            const allSectionsData = [];
+            document.querySelectorAll('.section-item').forEach(sectionDiv => {
+                const sectionTitle = sectionDiv.querySelector('.section-title').value;
+                const tableRows = [];
+                sectionDiv.querySelectorAll('tbody tr').forEach(row => {
+                    const rowData = {};
+                    const cells = row.querySelectorAll('td:not(:last-child)'); // Exclude the last cell (actions)
+                    rowData['Course Name'] = cells[0] ? cells[0].textContent : '';
+                    rowData['Link'] = cells[1] ? cells[1].textContent : '';
+                    rowData['Progress'] = cells[2] ? cells[2].textContent : '';
+                    rowData['Notes'] = cells[3] ? cells[3].textContent : '';
+                    tableRows.push(rowData);
+                });
+                allSectionsData.push({ title: sectionTitle, tableRows: tableRows });
+            });
+            localStorage.setItem('powerPagesData', JSON.stringify(allSectionsData));
+        }
+
+        // Function to load data from local storage
+        function loadData() {
+            const storedData = localStorage.getItem('powerPagesData');
+            if (storedData) {
+                const allSectionsData = JSON.parse(storedData);
+                allSectionsData.forEach(sectionData => createSection(sectionData));
+            } else {
+                // Create a default section if no data is found
+                createSection();
+            }
+        }
+
+        // Event listener for adding a new section
+        addSectionBtn.addEventListener('click', () => createSection());
+
+        // Load data when the page loads
+        document.addEventListener('DOMContentLoaded', loadData);
+    </script>
 </body>
 </html>
