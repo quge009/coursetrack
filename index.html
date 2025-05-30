@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Power Pages Simulator</title>
+    <title>Course Tracker</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -34,8 +34,7 @@
 </head>
 <body class="p-4 sm:p-6 md:p-8 lg:p-10">
     <div class="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6 sm:p-8">
-        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">My Custom Webpage</h1>
-        <p id="userIdDisplay" class="text-sm text-gray-500 text-center mb-4">User ID: Loading...</p>
+        <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 text-center">Categories</h1>
 
         <button id="addSectionBtn" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 mb-8">
             Add New Section
@@ -46,10 +45,10 @@
     </div>
 
     <script type="module">
-        // Firebase imports for App, Auth, and Firestore specific functions
+        // Firebase imports (placeholder for future Firestore integration)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // Global variables for Firebase (provided by the Canvas environment)
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
@@ -59,12 +58,10 @@
         let app;
         let db;
         let auth;
-        let userId = 'local_fallback_user'; // Default userId for localStorage or initial state
-        const userIdDisplay = document.getElementById('userIdDisplay');
+        let userId = 'anonymous'; // Default userId
 
-
-        // Initialize Firebase and authenticate, then load data
-        async function initializeFirebaseAndLoadData() {
+        // Initialize Firebase and authenticate
+        async function initializeFirebase() {
             try {
                 if (Object.keys(firebaseConfig).length > 0) {
                     app = initializeApp(firebaseConfig);
@@ -78,24 +75,19 @@
                         await signInAnonymously(auth);
                         console.log("Signed in anonymously.");
                     }
-                    userId = auth.currentUser?.uid || crypto.randomUUID(); // Ensure a userId is always set
-                    userIdDisplay.textContent = `User ID: ${userId}`; // Display userId in UI
+                    userId = auth.currentUser?.uid || crypto.randomUUID();
                     console.log("Firebase initialized. User ID:", userId);
-
-                    // Now that Firebase is initialized and userId is set, load data from Firestore
-                    await loadData();
                 } else {
-                    console.warn("Firebase config not found. Running without Firebase persistence.");
-                    // If no Firebase config, fall back to localStorage immediately
-                    loadData();
+                    console.warn("Firebase config not found. Running without Firebase.");
                 }
             } catch (error) {
                 console.error("Error initializing Firebase or signing in:", error);
-                console.warn("Running without Firebase persistence due to an error. Falling back to local storage.");
-                // Fallback to localStorage if Firebase initialization fails
-                loadData();
+                console.warn("Running without Firebase persistence due to an error.");
             }
         }
+
+        // Call Firebase initialization
+        initializeFirebase();
 
         const sectionsContainer = document.getElementById('sectionsContainer');
         const addSectionBtn = document.getElementById('addSectionBtn');
@@ -117,13 +109,19 @@
             titleInput.addEventListener('input', saveData); // Save data on title change
 
             const deleteSectionBtn = document.createElement('button');
-            deleteSectionBtn.classList.add('delete-section-btn', 'ml-4', 'p-2', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-500', 'focus:ring-opacity-75');
-            deleteSectionBtn.title = 'Delete Section';
             deleteSectionBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-red-500 hover:text-red-700 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             `;
+            deleteSectionBtn.classList.add('ml-4', 'p-2', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-500', 'focus:ring-opacity-75');
+            deleteSectionBtn.title = 'Delete Section';
+            deleteSectionBtn.addEventListener('click', () => {
+                if (window.confirm('Are you sure you want to delete this section? This action cannot be undone.')) {
+                    sectionDiv.remove();
+                    saveData(); // Save data after deleting section
+                }
+            });
 
             sectionHeader.appendChild(titleInput);
             sectionHeader.appendChild(deleteSectionBtn);
@@ -187,13 +185,19 @@
             const actionTd = document.createElement('td');
             actionTd.classList.add('py-3', 'px-6', 'text-center');
             const deleteRowBtn = document.createElement('button');
-            deleteRowBtn.classList.add('delete-row-btn', 'p-1', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-400', 'focus:ring-opacity-75');
-            deleteRowBtn.title = 'Delete Row';
             deleteRowBtn.innerHTML = `
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-red-400 hover:text-red-600 transition duration-150 ease-in-out" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
             `;
+            deleteRowBtn.classList.add('p-1', 'rounded-full', 'hover:bg-gray-200', 'focus:outline-none', 'focus:ring-2', 'focus:ring-red-400', 'focus:ring-opacity-75');
+            deleteRowBtn.title = 'Delete Row';
+            deleteRowBtn.addEventListener('click', () => {
+                if (window.confirm('Are you sure you want to delete this row? This action cannot be undone.')) {
+                    row.remove();
+                    saveData(); // Save data after deleting row
+                }
+            });
             actionTd.appendChild(deleteRowBtn);
             row.appendChild(actionTd);
 
@@ -201,8 +205,8 @@
             saveData(); // Save data after adding row
         }
 
-        // Function to save all data to Firestore or local storage
-        async function saveData() {
+        // Function to save all data to local storage
+        function saveData() {
             const allSectionsData = [];
             document.querySelectorAll('.section-item').forEach(sectionDiv => {
                 const sectionTitle = sectionDiv.querySelector('.section-title').value;
@@ -218,67 +222,17 @@
                 });
                 allSectionsData.push({ title: sectionTitle, tableRows: tableRows });
             });
-
-            // Save to Firestore if initialized and userId is available
-            if (db && userId && userId !== 'local_fallback_user') { // Ensure userId is not the fallback
-                try {
-                    // Use the recommended private data path
-                    const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/userPages`, 'myPageData'); // Use a fixed document ID like 'myPageData'
-                    await setDoc(userDocRef, { data: allSectionsData }); // Store the array under a 'data' field
-                    console.log("Data saved to Firestore for user:", userId);
-                } catch (error) {
-                    console.error("Error saving data to Firestore:", error);
-                    // Fallback to localStorage if Firestore save fails
-                    localStorage.setItem('powerPagesData', JSON.stringify(allSectionsData));
-                    console.warn("Falling back to localStorage for saving.");
-                }
-            } else {
-                // Always save to localStorage as a fallback or for non-Firebase environments
-                localStorage.setItem('powerPagesData', JSON.stringify(allSectionsData));
-                console.log("Data saved to localStorage.");
-            }
+            localStorage.setItem('powerPagesData', JSON.stringify(allSectionsData));
         }
 
-        // Function to load data from Firestore or local storage
-        async function loadData() {
-            let dataLoaded = false;
-            // Clear existing content before loading new data
-            sectionsContainer.innerHTML = '';
-
-            // Try loading from Firestore first
-            if (db && userId && userId !== 'local_fallback_user') { // Ensure userId is not the fallback
-                try {
-                    // Use the recommended private data path
-                    const userDocRef = doc(db, `artifacts/${appId}/users/${userId}/userPages`, 'myPageData');
-                    const docSnap = await getDoc(userDocRef);
-                    if (docSnap.exists()) {
-                        const allSectionsData = docSnap.data().data;
-                        console.log("Data loaded from Firestore for user:", userId);
-                        allSectionsData.forEach(sectionData => createSection(sectionData));
-                        dataLoaded = true;
-                    } else {
-                        console.log("No data found in Firestore for user:", userId);
-                    }
-                } catch (error) {
-                    console.error("Error loading data from Firestore:", error);
-                    console.warn("Falling back to localStorage for loading.");
-                }
-            }
-
-            // If no data was loaded from Firestore, try localStorage
-            if (!dataLoaded) {
-                const storedData = localStorage.getItem('powerPagesData');
-                if (storedData) {
-                    const allSectionsData = JSON.parse(storedData);
-                    console.log("Data loaded from localStorage.");
-                    allSectionsData.forEach(sectionData => createSection(sectionData));
-                    dataLoaded = true;
-                }
-            }
-
-            // If no data was loaded from either source, create a default section
-            if (!dataLoaded) {
-                console.log("No data found, creating default section.");
+        // Function to load data from local storage
+        function loadData() {
+            const storedData = localStorage.getItem('powerPagesData');
+            if (storedData) {
+                const allSectionsData = JSON.parse(storedData);
+                allSectionsData.forEach(sectionData => createSection(sectionData));
+            } else {
+                // Create a default section if no data is found
                 createSection();
             }
         }
@@ -286,42 +240,8 @@
         // Event listener for adding a new section
         addSectionBtn.addEventListener('click', () => createSection());
 
-        // --- Event Delegation for Delete Buttons ---
-        sectionsContainer.addEventListener('click', (event) => {
-            const clickedElement = event.target;
-
-            // Check if a section delete button was clicked
-            const deleteSectionButton = clickedElement.closest('.delete-section-btn');
-            if (deleteSectionButton) {
-                if (confirm('Are you sure you want to delete this section? All data within it will be lost.')) {
-                    // Find the parent section-item div
-                    const sectionDiv = deleteSectionButton.closest('.section-item');
-                    if (sectionDiv) {
-                        sectionDiv.remove();
-                        saveData(); // Save data after deleting section
-                    }
-                }
-                return; // Stop further processing for this click
-            }
-
-            // Check if a row delete button was clicked
-            const deleteRowButton = clickedElement.closest('.delete-row-btn');
-            if (deleteRowButton) {
-                if (confirm('Are you sure you want to delete this row?')) {
-                    // Find the parent table row
-                    const row = deleteRowButton.closest('tr');
-                    if (row) {
-                        row.remove();
-                        saveData(); // Save data after deleting row
-                    }
-                }
-                return; // Stop further processing for this click
-            }
-        });
-        // --- End Event Delegation ---
-
-        // Call the combined Firebase initialization and data loading function when the page loads
-        document.addEventListener('DOMContentLoaded', initializeFirebaseAndLoadData);
+        // Load data when the page loads
+        document.addEventListener('DOMContentLoaded', loadData);
     </script>
 </body>
 </html>
